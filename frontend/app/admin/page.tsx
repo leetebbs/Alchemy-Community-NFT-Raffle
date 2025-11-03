@@ -141,7 +141,8 @@ export default function AdminPage() {
                                 <div className="p-4 bg-gray-10 rounded-lg">
                                     <h4 className="font-semibold mb-2">Summary</h4>
                                     <p><strong>Total Entries:</strong> {entriesData.totalEntries}</p>
-                                    <p><strong>Commitment Hash:</strong> <span className="font-mono text-sm break-all">{entriesData.commitmentHash}</span></p>
+                                    <p><strong>Commitment Hash (Hex):</strong> <span className="font-mono text-sm break-all">{entriesData.commitmentHash}</span></p>
+                                    <p><strong>Commitment Hash (Decimal):</strong> <span className="font-mono text-sm break-all">{BigInt('0x' + entriesData.commitmentHash).toString()}</span></p>
                                     <p><strong>Unique Owners:</strong> {entriesData.ownerCounts.length}</p>
                                 </div>
 
