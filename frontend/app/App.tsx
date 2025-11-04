@@ -6,7 +6,7 @@ import {
     RainbowKitProvider,
 } from '@rainbow-me/rainbowkit';
 import { WagmiProvider } from 'wagmi';
-import {polygonAmoy} from 'wagmi/chains';
+import {sepolia} from 'wagmi/chains';
 import {
     QueryClientProvider,
     QueryClient,
@@ -14,8 +14,8 @@ import {
 
 const config = getDefaultConfig({
     appName: 'Alchemy Monthly NFT Raffle',
-    projectId: 'YOUR_PROJECT_ID',
-    chains: [polygonAmoy],
+    projectId: process.env.NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID as string,
+    chains: [sepolia],
     ssr: true, // If your dApp uses server side rendering (SSR)
 });
 

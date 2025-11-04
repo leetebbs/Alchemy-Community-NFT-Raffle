@@ -16,6 +16,9 @@ export default function Home() {
     const fetchWinner = async () => {
       try {
         const response = await fetch('/api/FetchWinnerAddress');
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
         const data = await response.json();
         setWinnerAddress(data.winnerAddress);
         if (data.month) setMonth(data.month);

@@ -2,6 +2,7 @@
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { useAccount } from 'wagmi'
 import { useState } from 'react'
+import { startRaffle } from "../components/startRaffle";
 
 type EntriesResponse = {
     totalEntries: number;
@@ -19,14 +20,15 @@ export default function AdminPage() {
     const adminAddress = process.env.NEXT_PUBLIC_ADMIN_ADDRESS?.toLowerCase();
     
     const [nftIds, setNftIds] = useState('');
+    const [month, setMonth] = useState('');
     const [shuffle, setShuffle] = useState(true);
     const [loading, setLoading] = useState(false);
     const [entriesData, setEntriesData] = useState<EntriesResponse | null>(null);
     const [error, setError] = useState('');
 
-    const startRaffle = () => {
-        // Placeholder function for starting the raffle
-        alert('Raffle started with ' + (entriesData ? entriesData.totalEntries : 0) + ' entries!');
+    const handleStartRaffle = () => {
+        // Call the imported startRaffle function
+        startRaffle(nftIds.split(',').map(id => id.trim()), month);
     }
 
     const fetchEntries = async () => {
@@ -88,6 +90,18 @@ export default function AdminPage() {
                         <div className="space-y-4">
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    Month
+                                </label>
+                                <input
+                                    type="text"
+                                    value={month}
+                                    onChange={(e) => setMonth(e.target.value)}
+                                    placeholder="e.g., November 2025"
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
                                     NFT IDs (comma-separated)
                                 </label>
                                 <input
@@ -122,7 +136,7 @@ export default function AdminPage() {
 
                             {entriesData && (
                                 <button
-                                    onClick={startRaffle}
+                                    onClick={handleStartRaffle}
                                     className="w-full bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700"
                                 >
                                     Start Raffle
