@@ -178,14 +178,6 @@ export default function Home() {
           </div>
         </div>
       </section>
-
-      {/* Footer */}
-      <footer className="relative z-10 border-t border-blue-100 bg-white/50 backdrop-blur-sm mt-20">
-        <div className="max-w-6xl mx-auto px-4 py-8 text-center text-sm text-blue-700">
-          <p>© 2025 Alchemy University Community NFT Raffle. All rights reserved.</p>
-          <p className="mt-2 text-blue-600">Powered by blockchain technology · Transparent & Fair</p>
-        </div>
-      </footer>
     </main>
   );
 }

@@ -97,10 +97,6 @@ export default function AdminPage() {
             <section className="relative z-10 max-w-6xl mx-auto px-4 py-20 md:py-32">
                 <div className="text-center space-y-8">
                     <div className="space-y-4">
-                        <div className="inline-block px-4 py-2 bg-blue-100 rounded-full flex items-center justify-center">
-                            <ShieldIcon className="w-5 h-5 mr-2" />
-                            <p className="text-sm font-semibold text-blue-700">🔒 Admin Dashboard</p>
-                        </div>
                         <h1 className="text-5xl md:text-6xl font-bold leading-tight text-blue-900 text-balance">
                             Manage the{" "}
                             <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-blue-400">
@@ -244,14 +240,6 @@ export default function AdminPage() {
                     </div>
                 )}
             </section>
-
-            {/* Footer */}
-            <footer className="relative z-10 border-t border-blue-100 bg-white/50 backdrop-blur-sm mt-20">
-                <div className="max-w-6xl mx-auto px-4 py-8 text-center text-sm text-blue-700">
-                    <p>© 2025 Alchemy University BFT Raffle. All rights reserved.</p>
-                    <p className="mt-2 text-blue-600">Powered by blockchain technology · Transparent & Fair</p>
-                </div>
-            </footer>
         </main>
     );
 }

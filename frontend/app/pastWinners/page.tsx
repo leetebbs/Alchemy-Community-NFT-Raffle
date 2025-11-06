@@ -65,9 +65,9 @@ export default function PastWinnersPage() {
             <h1 className="text-5xl md:text-6xl font-bold leading-tight text-blue-900 text-balance">
               Celebrating Our{" "}
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-blue-400">
-                Community Champions
+                Past Winnners
               </span>
-            </h1>``
+            </h1>
             <p className="text-lg text-blue-700 leading-relaxed text-pretty max-w-2xl mx-auto">
               See all the winners who have been selected in our monthly Alchemy University NFT raffles.
             </p>
@@ -112,14 +112,6 @@ export default function PastWinnersPage() {
           </div>
         )}
       </section>
-
-      {/* Footer */}
-      <footer className="relative z-10 border-t border-blue-100 bg-white/50 backdrop-blur-sm mt-20">
-        <div className="max-w-6xl mx-auto px-4 py-8 text-center text-sm text-blue-700">
-          <p>© 2025 Alchemy University BFT Raffle. All rights reserved.</p>
-          <p className="mt-2 text-blue-600">Powered by blockchain technology · Transparent & Fair</p>
-        </div>
-      </footer>
     </main>
   );
 }
