@@ -28,31 +28,39 @@ contract DeployAlchemyRaffle is Script {
         if (keccak256(abi.encodePacked(network)) == keccak256(abi.encodePacked("sepolia"))) {
             return NetworkConfig({
                 vrfCoordinator: 0x9DdfaCa8183c41ad55329BdeeD9F6A8d53168B1B,
-                vrfKeyHash: 0x787d74caea10b2b357790d5b5247c2f63d1d91572a9846f780606e4d953677ae, // 30 gwei
+                vrfKeyHash: 0x787d74caea10b2b357790d5b5247c2f63d1d91572a9846f780606e4d953677ae, // 500 gwei
                 functionsDonId: 0x66756e2d657468657265756d2d7365706f6c69612d3100000000000000000000,
                 functionsRouter: 0xb83E47C2bC239B3bf370bc41e1459A34b41238D0,
                 name: "Sepolia"
             });
         } else if (keccak256(abi.encodePacked(network)) == keccak256(abi.encodePacked("mainnet"))) {
             return NetworkConfig({
-                vrfCoordinator: 0x271682DEB8C4E0901D1a1550aD2e64D568E69909,
-                vrfKeyHash: 0x8af398995b04c28e9951adb9721ef74c74f93e6a478f39e7e0777be13527e7ef, // 200 gwei
+                vrfCoordinator: 0xD7f86b4b8Cae7D942340FF628F82735b7a20893a,
+                vrfKeyHash: 0x3fd2fec10d06ee8f65e7f2e95f5c56511359ece3f33960ad8a866ae24a8ff10b, // 500 gwei
                 functionsDonId: 0x66756e2d657468657265756d2d6d61696e6e65742d3100000000000000000000,
                 functionsRouter: 0x65Dcc24F8ff9e51F10DCc7Ed1e4e2A61e6E14bd6,
                 name: "Mainnet"
             });
+        } else if (keccak256(abi.encodePacked(network)) == keccak256(abi.encodePacked("polygon-mainnet"))) {
+            return NetworkConfig({
+                vrfCoordinator: 0xec0Ed46f36576541C75739E915ADbCb3DE24bD77,
+                vrfKeyHash: 0x719ed7d7664abc3001c18aac8130a2265e1e70b7e036ae20f3ca8b92b3154d86, // 500 gwei 
+                functionsDonId: 0x66756e2d706f6c79676f6e2d6d61696e6e65742d310000000000000000000000,
+                functionsRouter: 0xdc2AAF042Aeff2E68B3e8E33F19e4B9fA7C73F10,
+                name: "Polygon Mainnet"
+            });
         } else if (keccak256(abi.encodePacked(network)) == keccak256(abi.encodePacked("amoy"))) {
             return NetworkConfig({
-                vrfCoordinator: 0x7E10652Cb79Ba97bC1D0F38a1e8FaD8464a8a908,
-                vrfKeyHash: 0x3f631d5ec60a0ce16203bcd6aff7ffbc423e22e452786288e172d467354304c8, // 500 gwei
+                vrfCoordinator: 0x343300b5d84D444B2ADc9116FEF1bED02BE49Cf2,
+                vrfKeyHash: 0x816bedba8a50b294e5cbd47842baf240c2385f2eaf719edbd4f250a137a8c899, // 500 gwei
                 functionsDonId: 0x66756e2d706f6c79676f6e2d616d6f792d310000000000000000000000000000,
                 functionsRouter: 0xC22a79eBA640940ABB6dF0f7982cc119578E11De,
                 name: "Amoy"
             });
         } else if (keccak256(abi.encodePacked(network)) == keccak256(abi.encodePacked("arbitrum-sepolia"))) {
             return NetworkConfig({
-                vrfCoordinator: 0x50d47e4142598E3411aA864e08a44284e471AC6f,
-                vrfKeyHash: 0x027f94ff1465b3525f9fc03e9ff7d6d2c0953482246dd6ae07570c45d6631414, // 50 gwei
+                vrfCoordinator: 0x5CE8D5A2BC84beb22a398CCA51996F7930313D61,
+                vrfKeyHash: 0x1770bdc7eec7771f7ba4ffd640f34260d7f095b79c92d34a5b2551d6f6cfd2be, // 50 gwei
                 functionsDonId: 0x66756e2d617262697472756d2d7365706f6c69612d3100000000000000000000,
                 functionsRouter: 0x234a5fb5Bd614a7AA2FfAB244D603abFA0Ac5C5C,
                 name: "Arbitrum Sepolia"
@@ -74,7 +82,7 @@ contract DeployAlchemyRaffle is Script {
                 name: "Base Sepolia"
             });
         } else {
-            revert(string(abi.encodePacked("Unsupported network: ", network, ". Supported: sepolia, mainnet, amoy, arbitrum-sepolia, optimism-sepolia, base-sepolia")));
+            revert(string(abi.encodePacked("Unsupported network: ", network, ". Supported: sepolia, mainnet, polygon-mainnet, amoy, arbitrum-sepolia, optimism-sepolia, base-sepolia")));
         }
     }
 
