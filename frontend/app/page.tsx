@@ -3,9 +3,11 @@
 import { StarIcon, TrophyIcon } from "lucide-react"
 import { Button } from "./components/ui/button"
 import { useState, useEffect } from "react"
+import { resolveEnsName } from "./utils/getEns"
 
 export default function Home() {
   const [winnerAddress, setWinnerAddress] = useState<string | null>(null);
+  const [winnerDisplayName, setWinnerDisplayName] = useState<string>("Loading...");
   const [month, setMonth] = useState<string>("November 2025");
   const [totalEntries, setTotalEntries] = useState<number>(15);
   const [announcedDate, setAnnouncedDate] = useState<string>("November 15, 2025");
@@ -20,7 +22,9 @@ export default function Home() {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
         const data = await response.json();
-        setWinnerAddress(data.winnerAddress);
+        const addressToUse = data.winnerAddress;
+        
+        setWinnerAddress(addressToUse);
         if (data.month) setMonth(data.month);
         if (data.numberOfEntries !== undefined) setTotalEntries(data.numberOfEntries);
         if (data.createdAt) {
@@ -28,8 +32,21 @@ export default function Home() {
           setAnnouncedDate(date.toLocaleDateString());
         }
         if (data.isActive !== undefined) setIsActive(data.isActive);
+        
+        // Resolve ENS name if winner exists
+        if (addressToUse) {
+          const displayName = await resolveEnsName(addressToUse);
+          // If no ENS name, slice the address, otherwise use the full ENS name
+          const finalDisplayName = displayName === addressToUse 
+            ? `${displayName.slice(0, 6)}...${displayName.slice(-4)}`
+            : displayName;
+          setWinnerDisplayName(finalDisplayName);
+        } else {
+          setWinnerDisplayName("No winner yet");
+        }
       } catch (error) {
         console.error('Failed to fetch winner:', error);
+        setWinnerDisplayName("No winner yet");
       } finally {
         setLoading(false);
       }
@@ -40,7 +57,7 @@ export default function Home() {
 
   // Placeholder data
   const latestWinner = {
-    address: loading ? "Loading..." : (winnerAddress ? `${winnerAddress.slice(0, 6)}...${winnerAddress.slice(-4)}` : "No winner yet"),
+    address: loading ? "Loading..." : winnerDisplayName,
     month: month,
     announcedDate: announcedDate,
     status: winnerAddress ? (!isActive ? "Complete" : "Winner Selected") : (!isActive ? "Ended" : "Active"),
@@ -51,13 +68,6 @@ export default function Home() {
     totalEntries: totalEntries,
     userEntries: 5, // This might need to be dynamic based on user
     winProbability: totalEntries > 0 ? (1 / totalEntries * 100).toFixed(2) + "%" : "0%"
-  }
-
-  const currentRaffle = {
-    month: "December 2025",
-    isActive: true,
-    endDate: "December 31, 2025",
-    prize: "Exclusive Holiday Edition NFT"
   }
 
   return (
