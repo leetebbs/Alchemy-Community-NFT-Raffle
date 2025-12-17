@@ -68,9 +68,9 @@ export async function GET(request: NextRequest) {
       skip_empty_lines: true,
     }) as CsvRecord[];
 
-    // Search for the address
+    // Search for the address (trim whitespace from both sides)
     const record = records.find((row: CsvRecord) => 
-      row['At which Ethereum address would you like to receive the NFT?']?.toLowerCase() === ethAddress.toLowerCase()
+      row['At which Ethereum address would you like to receive the NFT?']?.trim().toLowerCase() === ethAddress.toLowerCase()
     );
 
     if (!record) {
