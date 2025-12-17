@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import fs from 'fs';
 import path from 'path';
 import { parse } from 'csv-parse/sync';
+import { list } from '@vercel/blob';
 
 interface CsvRecord {
   'What is your Discord handle? - Discord Display Name': string;
@@ -31,18 +32,38 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Try to read the latest uploaded CSV, fall back to default
-    let csvPath = path.join(process.cwd(), 'public/data/uploads/latest.csv');
-    
-    if (!fs.existsSync(csvPath)) {
-      // Fall back to static CSV if no uploads exist
-      csvPath = path.join(process.cwd(), 'public/data/Alchemy-Community-Call-Nov-26-2025_2025-11-26T19_50_06.csv');
+    let csvContent = '';
+
+    // Try to fetch the latest CSV from Vercel Blob
+    try {
+      const blobs = await list();
+      const latestFile = blobs.blobs.find(blob => blob.filename === 'discord_data_latest.csv');
+      
+      if (latestFile) {
+        const response = await fetch(latestFile.url);
+        csvContent = await response.text();
+      }
+    } catch (blobError) {
+      console.log('Blob fetch failed, falling back to static CSV');
     }
 
-    const fileContent = fs.readFileSync(csvPath, 'utf-8');
+    // Fall back to static CSV if Blob fetch failed
+    if (!csvContent) {
+      const csvPath = path.join(process.cwd(), 'public/data/Alchemy-Community-Call-Nov-26-2025_2025-11-26T19_50_06.csv');
+      if (fs.existsSync(csvPath)) {
+        csvContent = fs.readFileSync(csvPath, 'utf-8');
+      }
+    }
+
+    if (!csvContent) {
+      return NextResponse.json(
+        { error: 'No CSV data available' },
+        { status: 500 }
+      );
+    }
     
     // Parse CSV
-    const records = parse(fileContent, {
+    const records = parse(csvContent, {
       columns: true,
       skip_empty_lines: true,
     }) as CsvRecord[];
