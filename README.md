@@ -109,6 +109,44 @@ API Utilities
 - `app/api/FetchWinnerAddress` — Reads the latest raffle struct from the contract and formats winner metadata for the landing page.
 - `app/api/FetchPastWinners` — Iterates raffles via viem to build the public winners list.
 - `app/api/VerifyCommitmentHash` — Recomputes commitment hashes from NFT data or provided entry arrays for transparency/audits.
+- `app/api/GetDiscordName` — Server route that looks up Discord names from the community CSV file by Ethereum address. Protected by API key in Authorization header.
+
+Discord Name Lookup
+-------------------
+The raffle system includes a Discord name lookup feature for admins to identify community members by their Ethereum address.
+
+**CSV Data Source**
+- Location: `frontend/public/data/Alchemy-Community-Call-Nov-26-2025_2025-11-26T19_50_06.csv`
+- Contains: Discord display names, Discord user IDs, and Ethereum addresses submitted by community members during registration
+- Used by: Admin dashboard to quickly find Discord identities for winners and participants
+
+**API Endpoint: `GET /api/GetDiscordName`**
+- **Query Parameters:** `address` (Ethereum address to look up)
+- **Authentication:** Bearer token in `Authorization` header
+- **Response:** 
+  ```json
+  {
+    "discordName": "username",
+    "ethAddress": "0x..."
+  }
+  ```
+- **Error codes:**
+  - `400` - Missing address parameter
+  - `401` - Unauthorized (invalid API key)
+  - `404` - Address not found in CSV
+  - `500` - Server error
+
+**Environment Variables**
+```bash
+NEXT_PUBLIC_DISCORD_API_KEY=your_secret_key  # Used by frontend to authenticate requests
+DISCORD_API_KEY=your_secret_key              # Server-side validation (must match above)
+```
+
+**Admin Page Integration**
+- The admin dashboard includes a "Lookup Discord Name" section
+- Enter an Ethereum address to retrieve the associated Discord handle
+- Results display both the Discord name and verified Ethereum address
+- Requests are secured with API key authentication
 
 Verification & Auditing
 -----------------------

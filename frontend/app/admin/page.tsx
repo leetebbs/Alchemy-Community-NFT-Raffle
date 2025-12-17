@@ -43,6 +43,18 @@ export default function AdminPage() {
     const [loading, setLoading] = useState(false);
     const [entriesData, setEntriesData] = useState<EntriesResponse | null>(null);
     const [error, setError] = useState('');
+    
+    const [discordLookupAddress, setDiscordLookupAddress] = useState('');
+    const [discordResult, setDiscordResult] = useState<{ discordName: string; ethAddress: string } | null>(null);
+    const [discordLoading, setDiscordLoading] = useState(false);
+    const [discordError, setDiscordError] = useState('');
+
+    const [csvFile, setCsvFile] = useState<File | null>(null);
+    const [csvUploading, setCsvUploading] = useState(false);
+    const [csvMessage, setCsvMessage] = useState('');
+
+    const [pastWinners, setPastWinners] = useState<Array<{ raffleId: number; winnerAddress: string; winnerIndex: number; month: string }>>([]);
+    const [winnersLoading, setWinnersLoading] = useState(false);
 
     const handleStartRaffle = () => {
         // Call the imported startRaffle function
@@ -83,6 +95,150 @@ export default function AdminPage() {
             setError(err instanceof Error ? err.message : 'Failed to fetch entries');
         } finally {
             setLoading(false);
+        }
+    };
+
+    const lookupDiscordName = async () => {
+        if (!discordLookupAddress.trim()) {
+            setDiscordError('Please enter an Ethereum address');
+            return;
+        }
+
+        setDiscordLoading(true);
+        setDiscordError('');
+        setDiscordResult(null);
+
+        try {
+            const response = await fetch(
+                `/api/GetDiscordName?address=${encodeURIComponent(discordLookupAddress)}`,
+                {
+                    headers: {
+                        'Authorization': `Bearer ${process.env.NEXT_PUBLIC_DISCORD_API_KEY}`,
+                    }
+                }
+            );
+
+            if (!response.ok) {
+                if (response.status === 404) {
+                    throw new Error('Address not found in the database');
+                } else if (response.status === 401) {
+                    throw new Error('Unauthorized');
+                }
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const data = await response.json();
+            setDiscordResult(data);
+        } catch (err) {
+            setDiscordError(err instanceof Error ? err.message : 'Failed to lookup Discord name');
+        } finally {
+            setDiscordLoading(false);
+        }
+    };
+
+    const fetchPastWinners = async () => {
+        setWinnersLoading(true);
+        try {
+            const response = await fetch('/api/FetchPastWinners');
+            if (!response.ok) {
+                throw new Error('Failed to fetch past winners');
+            }
+            const data = await response.json();
+            setPastWinners(data.winners || []);
+        } catch (err) {
+            console.error('Error fetching past winners:', err);
+            setPastWinners([]);
+        } finally {
+            setWinnersLoading(false);
+        }
+    };
+
+    const handleCsvUpload = async () => {
+        if (!csvFile) {
+            setCsvMessage('Please select a CSV file');
+            return;
+        }
+
+        setCsvUploading(true);
+        setCsvMessage('');
+
+        try {
+            const formData = new FormData();
+            formData.append('file', csvFile);
+
+            const apiKey = process.env.NEXT_PUBLIC_DISCORD_API_KEY;
+            const response = await fetch('/api/UploadCSV', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${apiKey}`,
+                },
+                body: formData,
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to upload CSV');
+            }
+
+            const data = await response.json();
+            setCsvMessage(`CSV uploaded successfully: ${data.filename}`);
+            setCsvFile(null);
+            // Reset file input
+            const fileInput = document.getElementById('csvFileInput') as HTMLInputElement;
+            if (fileInput) fileInput.value = '';
+        } catch (err) {
+            setCsvMessage(err instanceof Error ? err.message : 'Failed to upload CSV');
+        } finally {
+            setCsvUploading(false);
+        }
+    };
+
+    const fetchLastWinnerDiscord = async () => {
+        try {
+            setDiscordLoading(true);
+            setDiscordError('');
+            setDiscordResult(null);
+
+            // Fetch past winners
+            const winnersResponse = await fetch('/api/FetchPastWinners');
+            if (!winnersResponse.ok) {
+                throw new Error('Failed to fetch winners');
+            }
+
+            const winnersData = await winnersResponse.json();
+            const winners = winnersData.winners || [];
+
+            if (winners.length === 0) {
+                setDiscordError('No past winners found');
+                return;
+            }
+
+            // Get the last winner
+            const lastWinner = winners[winners.length - 1];
+
+            // Look up their Discord name
+            const response = await fetch(
+                `/api/GetDiscordName?address=${encodeURIComponent(lastWinner.winnerAddress)}`,
+                {
+                    headers: {
+                        'Authorization': `Bearer ${process.env.NEXT_PUBLIC_DISCORD_API_KEY}`,
+                    }
+                }
+            );
+
+            if (!response.ok) {
+                if (response.status === 404) {
+                    throw new Error(`Address not found: ${lastWinner.winnerAddress}`);
+                }
+                throw new Error('Failed to lookup Discord name');
+            }
+
+            const discordData = await response.json();
+            setDiscordResult(discordData);
+            setDiscordLookupAddress(lastWinner.winnerAddress);
+        } catch (err) {
+            setDiscordError(err instanceof Error ? err.message : 'Failed to fetch last winner Discord name');
+        } finally {
+            setDiscordLoading(false);
         }
     };
     
@@ -200,6 +356,130 @@ export default function AdminPage() {
                             {error && (
                                 <div className="p-4 bg-red-100 border-2 border-red-300 rounded-lg text-red-700 font-semibold">
                                     {error}
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Discord Lookup Section */}
+                        <div className="bg-white rounded-xl p-8 shadow-lg border-2 border-blue-200">
+                            <h3 className="text-2xl font-bold text-blue-900 mb-6">Lookup Discord Name</h3>
+                            
+                            <div className="mb-6">
+                                <label className="block text-sm font-semibold text-blue-700 mb-2">
+                                    Ethereum Address
+                                </label>
+                                <input
+                                    type="text"
+                                    value={discordLookupAddress}
+                                    onChange={(e) => setDiscordLookupAddress(e.target.value)}
+                                    placeholder="0x..."
+                                    className="w-full px-4 py-3 border-2 border-blue-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-blue-50 text-blue-900"
+                                />
+                            </div>
+
+                            <div className="flex gap-4 mb-6">
+                                <button
+                                    onClick={lookupDiscordName}
+                                    disabled={discordLoading}
+                                    className="flex-1 bg-purple-600 text-white py-3 px-6 rounded-lg hover:bg-purple-700 disabled:bg-gray-400 disabled:cursor-not-allowed font-semibold transition-colors"
+                                >
+                                    {discordLoading ? 'Searching...' : 'Lookup Discord Name'}
+                                </button>
+                                <button
+                                    onClick={fetchLastWinnerDiscord}
+                                    disabled={discordLoading}
+                                    className="flex-1 bg-indigo-600 text-white py-3 px-6 rounded-lg hover:bg-indigo-700 disabled:bg-gray-400 disabled:cursor-not-allowed font-semibold transition-colors"
+                                >
+                                    {discordLoading ? 'Loading...' : 'Last Winner'}
+                                </button>
+                            </div>
+
+                            {discordError && (
+                                <div className="p-4 bg-red-100 border-2 border-red-300 rounded-lg text-red-700 font-semibold mb-4">
+                                    {discordError}
+                                </div>
+                            )}
+
+                            {discordResult && (
+                                <div className="p-4 bg-green-100 border-2 border-green-300 rounded-lg text-green-700">
+                                    <p className="font-semibold mb-2">Found:</p>
+                                    <p className="mb-1"><span className="font-semibold">Discord Name:</span> {discordResult.discordName}</p>
+                                    <p className="text-sm font-mono break-all"><span className="font-semibold">Address:</span> {discordResult.ethAddress}</p>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* CSV Upload Section */}
+                        <div className="bg-white rounded-xl p-8 shadow-lg border-2 border-blue-200">
+                            <h3 className="text-2xl font-bold text-blue-900 mb-6">Upload Discord Data CSV</h3>
+                            
+                            <div className="mb-6">
+                                <label className="block text-sm font-semibold text-blue-700 mb-2">
+                                    CSV File
+                                </label>
+                                <input
+                                    id="csvFileInput"
+                                    type="file"
+                                    accept=".csv"
+                                    onChange={(e) => setCsvFile(e.target.files?.[0] || null)}
+                                    className="w-full px-4 py-3 border-2 border-blue-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-blue-50 text-blue-900"
+                                />
+                            </div>
+
+                            <button
+                                onClick={handleCsvUpload}
+                                disabled={csvUploading || !csvFile}
+                                className="w-full bg-green-600 text-white py-3 px-6 rounded-lg hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed font-semibold transition-colors"
+                            >
+                                {csvUploading ? 'Uploading...' : 'Upload CSV'}
+                            </button>
+
+                            {csvMessage && (
+                                <div className={`mt-4 p-4 rounded-lg font-semibold ${csvMessage.includes('success') || csvMessage.includes('uploaded') ? 'bg-green-100 border-2 border-green-300 text-green-700' : 'bg-red-100 border-2 border-red-300 text-red-700'}`}>
+                                    {csvMessage}
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Past Winners Section */}
+                        <div className="bg-white rounded-xl p-8 shadow-lg border-2 border-blue-200">
+                            <div className="flex justify-between items-center mb-6">
+                                <h3 className="text-2xl font-bold text-blue-900">Past Winners</h3>
+                                <button
+                                    onClick={fetchPastWinners}
+                                    disabled={winnersLoading}
+                                    className="bg-indigo-600 text-white py-2 px-4 rounded-lg hover:bg-indigo-700 disabled:bg-gray-400 disabled:cursor-not-allowed font-semibold transition-colors text-sm"
+                                >
+                                    {winnersLoading ? 'Loading...' : 'Refresh'}
+                                </button>
+                            </div>
+
+                            {pastWinners.length > 0 ? (
+                                <div className="overflow-x-auto">
+                                    <table className="w-full text-sm">
+                                        <thead>
+                                            <tr className="border-b-2 border-blue-200">
+                                                <th className="text-left py-3 px-4 font-semibold text-blue-900">Raffle ID</th>
+                                                <th className="text-left py-3 px-4 font-semibold text-blue-900">Month</th>
+                                                <th className="text-left py-3 px-4 font-semibold text-blue-900">Winner Address</th>
+                                                <th className="text-left py-3 px-4 font-semibold text-blue-900">Index</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {pastWinners.map((winner) => (
+                                                <tr key={winner.raffleId} className="border-b border-blue-100 hover:bg-blue-50">
+                                                    <td className="py-3 px-4 text-blue-700 font-semibold">{winner.raffleId}</td>
+                                                    <td className="py-3 px-4 text-blue-700">{winner.month}</td>
+                                                    <td className="py-3 px-4 text-blue-600 font-mono text-xs break-all">{winner.winnerAddress}</td>
+                                                    <td className="py-3 px-4 text-blue-700">{winner.winnerIndex}</td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            ) : (
+                                <div className="text-center py-8 text-blue-600">
+                                    {winnersLoading ? 'Loading winners...' : 'No past winners found. Click "Refresh" to load.'}
                                 </div>
                             )}
                         </div>
