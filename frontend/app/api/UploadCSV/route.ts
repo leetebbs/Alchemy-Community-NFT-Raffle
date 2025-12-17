@@ -41,7 +41,7 @@ export async function POST(request: NextRequest) {
     // Also update a "latest" file pointer
     const latestBlob = await put('discord_data_latest.csv', file, {
       access: 'public',
-      overwrite: true,
+      addRandomSuffix: false,
     });
 
     return NextResponse.json({

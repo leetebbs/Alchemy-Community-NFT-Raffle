@@ -37,7 +37,7 @@ export async function GET(request: NextRequest) {
     // Try to fetch the latest CSV from Vercel Blob
     try {
       const blobs = await list();
-      const latestFile = blobs.blobs.find(blob => blob.filename === 'discord_data_latest.csv');
+      const latestFile = blobs.blobs.find(blob => blob.pathname === 'discord_data_latest.csv');
       
       if (latestFile) {
         const response = await fetch(latestFile.url);
