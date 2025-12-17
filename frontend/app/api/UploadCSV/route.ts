@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { put } from '@vercel/blob';
+import { put, list, del } from '@vercel/blob';
 
 export async function POST(request: NextRequest) {
   try {
@@ -41,7 +41,17 @@ export async function POST(request: NextRequest) {
       token: process.env.BLOB_READ_WRITE_TOKEN,
     });
 
-    // Also update a "latest" file pointer
+    // Also update a "latest" file pointer (delete then re-put to avoid conflicts)
+    try {
+      const existing = await list();
+      const latest = existing.blobs.find(b => b.pathname === 'discord_data_latest.csv');
+      if (latest) {
+        await del(latest.pathname, { token: process.env.BLOB_READ_WRITE_TOKEN });
+      }
+    } catch (e) {
+      // Listing or deletion failing shouldn't block the upload; we'll proceed to write the latest pointer.
+    }
+
     const latestBlob = await put('discord_data_latest.csv', file, {
       access: 'public',
       addRandomSuffix: false,
