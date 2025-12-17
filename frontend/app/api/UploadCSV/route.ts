@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import fs from 'fs';
-import path from 'path';
+import { put } from '@vercel/blob';
 
 export async function POST(request: NextRequest) {
   try {
@@ -31,32 +30,27 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Create uploads directory if it doesn't exist
-    const uploadsDir = path.join(process.cwd(), 'public/data/uploads');
-    if (!fs.existsSync(uploadsDir)) {
-      fs.mkdirSync(uploadsDir, { recursive: true });
-    }
-
-    // Save file with timestamp
+    // Upload to Vercel Blob
     const timestamp = Date.now();
     const filename = `discord_data_${timestamp}.csv`;
-    const filepath = path.join(uploadsDir, filename);
+    
+    const blob = await put(filename, file, {
+      access: 'public',
+    });
 
-    const buffer = await file.arrayBuffer();
-    fs.writeFileSync(filepath, Buffer.from(buffer));
-
-    // Update symlink to latest file
-    const latestLink = path.join(uploadsDir, 'latest.csv');
-    if (fs.existsSync(latestLink)) {
-      fs.unlinkSync(latestLink);
-    }
-    fs.symlinkSync(filename, latestLink);
+    // Also update a "latest" file pointer
+    const latestBlob = await put('discord_data_latest.csv', file, {
+      access: 'public',
+      overwrite: true,
+    });
 
     return NextResponse.json({
       success: true,
       message: 'CSV uploaded successfully',
       filename,
       timestamp,
+      url: blob.url,
+      latestUrl: latestBlob.url,
     });
   } catch (error) {
     console.error('Error uploading CSV:', error);
