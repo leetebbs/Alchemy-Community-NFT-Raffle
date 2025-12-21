@@ -156,6 +156,11 @@ The raffle system includes a Discord name lookup feature for admins to identify 
 **API Endpoint: `GET /api/GetDiscordName`**
 - **Query Parameters:** `address` (Ethereum address to look up)
 - **Authentication:** Bearer token in `Authorization` header
+  - **Security:** API key authentication prevents unauthorized access to community Discord data
+  - **Header format:** `Authorization: Bearer <DISCORD_API_KEY>`
+  - **Server validation:** Compares against `DISCORD_API_KEY` environment variable
+  - **Frontend integration:** Uses `NEXT_PUBLIC_DISCORD_API_KEY` to authenticate requests
+  - **Protection scope:** Guards all Discord name lookups, including manual queries and automated last winner lookups
 - **Response:** 
   ```json
   {
@@ -165,16 +170,20 @@ The raffle system includes a Discord name lookup feature for admins to identify 
   ```
 - **Error codes:**
   - `400` - Missing address parameter
-  - `401` - Unauthorized (invalid API key)
+  - `401` - Unauthorized (invalid API key or missing Authorization header)
   - `404` - Address not found in CSV
   - `500` - Server error or no CSV data available
 - **Lookup Logic:**
-  1. Attempts to fetch `discord_data_latest.csv` from Vercel Blob Storage
-  2. Falls back to static bundled CSV if Blob fetch fails
-  3. Trims whitespace from addresses before comparison (handles CSV formatting issues)
+  1. **Validates Authorization header** against server-side `DISCORD_API_KEY`
+  2. Attempts to fetch `discord_data_latest.csv` from Vercel Blob Storage
+  3. Falls back to static bundled CSV if Blob fetch fails
+  4. Trims whitespace from addresses before comparison (handles CSV formatting issues)
 
 **API Endpoint: `POST /api/UploadCSV`**
 - **Authentication:** Bearer token in `Authorization` header
+  - **Security:** API key authentication prevents unauthorized CSV uploads
+  - **Header format:** `Authorization: Bearer <DISCORD_API_KEY>`
+  - **Admin-only access:** Protects community data integrity by restricting uploads to authorized admins
 - **Form Data:** `file` (multipart form, `.csv` file only)
 - **Response:** 
   ```json
@@ -189,7 +198,7 @@ The raffle system includes a Discord name lookup feature for admins to identify 
   ```
 - **Error codes:**
   - `400` - No file or invalid file type (must be `.csv`)
-  - `401` - Unauthorized (invalid API key)
+  - `401` - Unauthorized (invalid API key or missing Authorization header)
   - `500` - Upload failed
 - **Upload Behavior:**
   1. Creates timestamped blob file: `discord_data_<timestamp>.csv`
@@ -200,10 +209,20 @@ The raffle system includes a Discord name lookup feature for admins to identify 
 
 **Environment Variables**
 ```bash
-NEXT_PUBLIC_DISCORD_API_KEY=your_secret_key  # Used by frontend to authenticate requests
-DISCORD_API_KEY=your_secret_key              # Server-side validation (must match above)
+NEXT_PUBLIC_DISCORD_API_KEY=your_secret_key  # Used by frontend to authenticate API requests
+DISCORD_API_KEY=your_secret_key              # Server-side validation (must match NEXT_PUBLIC_DISCORD_API_KEY)
 BLOB_READ_WRITE_TOKEN=<vercel_blob_token>    # Vercel Blob Storage token (Vercel deployment only)
 ```
+
+**Security Best Practices**
+- **API Key Protection:** The `DISCORD_API_KEY` acts as a Bearer token to prevent unauthorized access to Discord lookup and CSV upload endpoints
+- **Dual Environment Variables:** 
+  - `NEXT_PUBLIC_DISCORD_API_KEY` — Client-side key for frontend requests (exposed to browser)
+  - `DISCORD_API_KEY` — Server-side validation key (private, not exposed to client)
+  - Both must match for authentication to succeed
+- **Key Rotation:** Change both keys periodically and update in Vercel environment variables
+- **Rate Limiting:** Consider implementing rate limiting on `/api/GetDiscordName` for production deployments
+- **HTTPS Only:** Always use HTTPS in production to protect API keys in transit
 
 **Admin Page Integration**
 - **Lookup Discord Name:**
