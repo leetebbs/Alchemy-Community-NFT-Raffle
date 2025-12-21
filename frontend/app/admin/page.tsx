@@ -314,7 +314,7 @@ export default function AdminPage() {
                                     </label>
                                     <input
                                         type="text"
-                                        value={month}
+                                        value={month ?? ''}
                                         onChange={(e) => setMonth(e.target.value)}
                                         placeholder="e.g., November 2025"
                                         className="w-full px-4 py-3 border-2 border-blue-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-blue-50 text-blue-900"
@@ -326,7 +326,7 @@ export default function AdminPage() {
                                     </label>
                                     <input
                                         type="text"
-                                        value={nftIds}
+                                        value={nftIds ?? ''}
                                         onChange={(e) => setNftIds(e.target.value)}
                                         placeholder="136, 137, 138, 139"
                                         className="w-full px-4 py-3 border-2 border-blue-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-blue-50 text-blue-900"
@@ -359,6 +359,48 @@ export default function AdminPage() {
                                 </div>
                             )}
                         </div>
+                        {/* Results Section */}
+                        {entriesData && (
+                            <div className="grid md:grid-cols-3 gap-8">
+                                {/* Summary */}
+                                <div className="md:col-span-1 bg-white rounded-xl p-6 shadow-lg border-2 border-blue-200">
+                                    <h4 className="text-lg font-bold text-blue-900 mb-4">Summary</h4>
+                                    <div className="space-y-3">
+                                        <p className="text-blue-700"><span className="font-semibold">Total Entries:</span> {entriesData.totalEntries}</p>
+                                        <p className="text-blue-700"><span className="font-semibold">Unique Owners:</span> {entriesData.ownerCounts.length}</p>
+                                        <p className="text-blue-700 text-sm"><span className="font-semibold">Commitment Hash:</span></p>
+                                        <p className="font-mono text-xs break-all text-blue-600">{entriesData.commitmentHash}</p>
+                                    </div>
+                                </div>
+
+                                {/* All Entries */}
+                                <div className="md:col-span-1 bg-white rounded-xl p-6 shadow-lg border-2 border-blue-200">
+                                    <h4 className="text-lg font-bold text-blue-900 mb-4">All Entries ({entriesData.entries.length})</h4>
+                                    <div className="max-h-60 overflow-y-auto space-y-1">
+                                        {entriesData.entries.map((entry, index) => (
+                                            <div key={index} className="text-sm font-mono py-1 border-b border-blue-100 text-blue-700">
+                                                {index}: {entry}
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                {/* Owner Counts */}
+                                <div className="md:col-span-1 bg-white rounded-xl p-6 shadow-lg border-2 border-blue-200">
+                                    <h4 className="text-lg font-bold text-blue-900 mb-4">Owner Counts</h4>
+                                    <div className="max-h-60 overflow-y-auto space-y-2">
+                                        {entriesData.ownerCounts.map((owner, index) => (
+                                            <div key={index} className="text-sm py-1 border-b border-blue-100 text-blue-700">
+                                                <span className="font-mono">{owner.address.slice(0, 8)}...{owner.address.slice(-6)}</span>
+                                                <span className="ml-2 text-blue-600">({owner.nftCount} NFTs)</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        
 
                         {/* Discord Lookup Section */}
                         <div className="bg-white rounded-xl p-8 shadow-lg border-2 border-blue-200">
@@ -370,7 +412,7 @@ export default function AdminPage() {
                                 </label>
                                 <input
                                     type="text"
-                                    value={discordLookupAddress}
+                                    value={discordLookupAddress ?? ''}
                                     onChange={(e) => setDiscordLookupAddress(e.target.value)}
                                     placeholder="0x..."
                                     className="w-full px-4 py-3 border-2 border-blue-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-blue-50 text-blue-900"
@@ -441,7 +483,7 @@ export default function AdminPage() {
                             )}
                         </div>
 
-                        {/* Past Winners Section */}
+                        Past Winners Section
                         <div className="bg-white rounded-xl p-8 shadow-lg border-2 border-blue-200">
                             <div className="flex justify-between items-center mb-6">
                                 <h3 className="text-2xl font-bold text-blue-900">Past Winners</h3>
@@ -484,46 +526,7 @@ export default function AdminPage() {
                             )}
                         </div>
 
-                        {/* Results Section */}
-                        {entriesData && (
-                            <div className="grid md:grid-cols-3 gap-8">
-                                {/* Summary */}
-                                <div className="md:col-span-1 bg-white rounded-xl p-6 shadow-lg border-2 border-blue-200">
-                                    <h4 className="text-lg font-bold text-blue-900 mb-4">Summary</h4>
-                                    <div className="space-y-3">
-                                        <p className="text-blue-700"><span className="font-semibold">Total Entries:</span> {entriesData.totalEntries}</p>
-                                        <p className="text-blue-700"><span className="font-semibold">Unique Owners:</span> {entriesData.ownerCounts.length}</p>
-                                        <p className="text-blue-700 text-sm"><span className="font-semibold">Commitment Hash:</span></p>
-                                        <p className="font-mono text-xs break-all text-blue-600">{entriesData.commitmentHash}</p>
-                                    </div>
-                                </div>
-
-                                {/* All Entries */}
-                                <div className="md:col-span-1 bg-white rounded-xl p-6 shadow-lg border-2 border-blue-200">
-                                    <h4 className="text-lg font-bold text-blue-900 mb-4">All Entries ({entriesData.entries.length})</h4>
-                                    <div className="max-h-60 overflow-y-auto space-y-1">
-                                        {entriesData.entries.map((entry, index) => (
-                                            <div key={index} className="text-sm font-mono py-1 border-b border-blue-100 text-blue-700">
-                                                {index}: {entry}
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-
-                                {/* Owner Counts */}
-                                <div className="md:col-span-1 bg-white rounded-xl p-6 shadow-lg border-2 border-blue-200">
-                                    <h4 className="text-lg font-bold text-blue-900 mb-4">Owner Counts</h4>
-                                    <div className="max-h-60 overflow-y-auto space-y-2">
-                                        {entriesData.ownerCounts.map((owner, index) => (
-                                            <div key={index} className="text-sm py-1 border-b border-blue-100 text-blue-700">
-                                                <span className="font-mono">{owner.address.slice(0, 8)}...{owner.address.slice(-6)}</span>
-                                                <span className="ml-2 text-blue-600">({owner.nftCount} NFTs)</span>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-                            </div>
-                        )}
+                        
                     </div>
                 ) : (
                     <div className="bg-gradient-to-r from-red-50 to-red-100 rounded-2xl p-8 md:p-12 border-2 border-red-200 glow text-center max-w-2xl mx-auto">
