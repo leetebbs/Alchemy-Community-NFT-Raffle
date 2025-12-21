@@ -1,61 +1,55 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createPublicClient, http, getContract } from 'viem';
-import { sepolia } from 'viem/chains';
-
-const contractABI = [
-  {
-    inputs: [],
-    name: 'raffleCounter',
-    outputs: [{ type: 'uint256' }],
-    stateMutability: 'view',
-    type: 'function',
-  },
-  {
-    inputs: [{ type: 'uint256' }],
-    name: 'getWinnerByRaffleId',
-    outputs: [
-      { type: 'address' },
-      { type: 'uint256' },
-      { type: 'string' },
-      { type: 'bool' },
-    ],
-    stateMutability: 'view',
-    type: 'function',
-  },
-] as const;
+import { publicClient } from '../client';
+import { Abi } from '../abi';
 
 export async function GET() {
-  const rpcUrl = process.env.ALCHEMY_RAFFLE_RPC_URL;
   const contractAddress = process.env.NEXT_PUBLIC_RAFFLE_CONTRACT_ADDRESS as `0x${string}`;
 
-  if (!rpcUrl || !contractAddress) {
+  if (!contractAddress) {
     return NextResponse.json({ error: 'Missing environment variables' }, { status: 500 });
   }
 
-  const client = createPublicClient({
-    chain: sepolia,
-    transport: http(rpcUrl),
-  });
-
-  const contract = getContract({
-    address: contractAddress,
-    abi: contractABI,
-    client,
-  });
-
   try {
-    const counter = await contract.read.raffleCounter();
-    const winners = [];
+    const counter = await publicClient.readContract({
+      address: contractAddress,
+      abi: Abi,
+      functionName: 'raffleCounter',
+    }) as bigint;
+
+    const winners = [] as Array<{
+      raffleId: number;
+      winnerAddress: string;
+      winnerIndex: number;
+      month: string;
+      commitmentHash: string;
+      nftIds: string[];
+    }>;
 
     for (let i = 1; i <= Number(counter); i++) {
-      const [winnerAddress, winnerIndex, month, hasWinner] = await contract.read.getWinnerByRaffleId([BigInt(i)]);
+      const [winnerAddress, winnerIndex, month, hasWinner] = await publicClient.readContract({
+        address: contractAddress,
+        abi: Abi,
+        functionName: 'getWinnerByRaffleId',
+        args: [BigInt(i)],
+      }) as [string, bigint, string, boolean];
 
       if (hasWinner && winnerAddress !== '0x0000000000000000000000000000000000000000') {
+        const [numberOfEntries, commitmentHash, raffleMonth, isActive, createdAt, selectedWinnerIndex, winnerAddrFromDetails, nftIds] = await publicClient.readContract({
+          address: contractAddress,
+          abi: Abi,
+          functionName: 'getRaffleDetails',
+          args: [BigInt(i)],
+        }) as [bigint, bigint, string, boolean, bigint, bigint, `0x${string}`, string[]];
+
+        const commitmentHashHex = '0x' + commitmentHash.toString(16).padStart(64, '0');
+
         winners.push({
           raffleId: i,
           winnerAddress,
           winnerIndex: Number(winnerIndex),
-          month,
+          month: raffleMonth,
+          commitmentHash: commitmentHashHex,
+          nftIds,
         });
       }
     }
