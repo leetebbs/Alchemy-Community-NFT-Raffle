@@ -26,6 +26,17 @@ type EntriesResponse = {
     }>;
 }
 
+type VerificationResponse = {
+    isValid: boolean;
+    calculatedHash: string;
+    providedHash: string;
+    entriesCount: number;
+    nftIds?: string[];
+    method: 'nft-fetch' | 'provided-entries';
+    message: string;
+    entriesPreview?: string[];
+}
+
 export default function AdminPage() {
     const { address, isConnected } = useAccount();
     
@@ -53,8 +64,15 @@ export default function AdminPage() {
     const [csvUploading, setCsvUploading] = useState(false);
     const [csvMessage, setCsvMessage] = useState('');
 
-    const [pastWinners, setPastWinners] = useState<Array<{ raffleId: number; winnerAddress: string; winnerIndex: number; month: string }>>([]);
+    const [pastWinners, setPastWinners] = useState<Array<{ raffleId: number; winnerAddress: string; winnerIndex: number; month: string; commitmentHash?: string; nftIds?: string[] }>>([]);
     const [winnersLoading, setWinnersLoading] = useState(false);
+
+    // Commitment hash verification state
+    const [commitmentInput, setCommitmentInput] = useState('');
+    const [verifyLoading, setVerifyLoading] = useState(false);
+    const [verifyResult, setVerifyResult] = useState<VerificationResponse | null>(null);
+    const [verifyError, setVerifyError] = useState('');
+    const [verifyNftIds, setVerifyNftIds] = useState('');
 
     const handleStartRaffle = () => {
         // Call the imported startRaffle function
@@ -241,6 +259,49 @@ export default function AdminPage() {
             setDiscordLoading(false);
         }
     };
+
+    const verifyCommitment = async () => {
+        const hash = commitmentInput.trim();
+        if (!hash) {
+            setVerifyError('Please enter a commitment hash');
+            return;
+        }
+
+        setVerifyLoading(true);
+        setVerifyError('');
+        setVerifyResult(null);
+
+        try {
+            const sourceIds = verifyNftIds.trim() ? verifyNftIds : nftIds;
+            const nftIdArray = sourceIds.split(',').map(id => id.trim()).filter(id => id);
+            const payload: Record<string, unknown> = { commitmentHash: hash };
+
+            if (nftIdArray.length > 0) {
+                payload.nftIds = nftIdArray;
+            } else if (entriesData?.entries?.length) {
+                payload.entries = entriesData.entries;
+            } else {
+                throw new Error('Provide NFT IDs or fetch entries first');
+            }
+
+            const response = await fetch('/api/VerifyCommitmentHash', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload),
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const data: VerificationResponse = await response.json();
+            setVerifyResult(data);
+        } catch (err) {
+            setVerifyError(err instanceof Error ? err.message : 'Verification failed');
+        } finally {
+            setVerifyLoading(false);
+        }
+    };
     
     return (
         <main className="min-h-screen bg-gradient-to-b from-blue-50 via-white to-blue-50 overflow-hidden">
@@ -400,6 +461,74 @@ export default function AdminPage() {
                             </div>
                         )}
 
+                        {/* Verify Commitment Hash Section */}
+                        <div className="bg-white rounded-xl p-8 shadow-lg border-2 border-blue-200">
+                            <h3 className="text-2xl font-bold text-blue-900 mb-6">Verify Commitment Hash</h3>
+                            <div className="space-y-6 mb-6">
+                                <div>
+                                    <label className="block text-sm font-semibold text-blue-700 mb-2">
+                                        Commitment Hash
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={commitmentInput ?? ''}
+                                        onChange={(e) => setCommitmentInput(e.target.value)}
+                                        placeholder="sha256 hex string"
+                                        className="w-full px-4 py-3 border-2 border-blue-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-blue-50 text-blue-900"
+                                    />
+                                    <p className="mt-2 text-xs text-blue-600">Uses current NFT IDs or fetched entries.</p>
+                                </div>
+                                <div className="flex flex-col md:flex-row md:items-center gap-4">
+                                    <div className="flex-1">
+                                        <label className="block text-sm font-semibold text-blue-700 mb-2">
+                                            NFT IDs for Verification (comma-separated)
+                                        </label>
+                                        <input
+                                            type="text"
+                                            value={verifyNftIds ?? ''}
+                                            onChange={(e) => setVerifyNftIds(e.target.value)}
+                                            placeholder="e.g., 137, 138, 139"
+                                            className="w-full px-4 py-3 border-2 border-blue-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-blue-50 text-blue-900"
+                                        />
+                                        <p className="mt-2 text-xs text-blue-600">If set, verification will fetch owners for these IDs.</p>
+                                    </div>
+                                    <div className="flex-1 md:self-center ">
+                                        <button
+                                            onClick={verifyCommitment}
+                                            disabled={verifyLoading}
+                                            className="w-full h-[52px] bg-blue-600 text-white py-3 px-6 rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed font-semibold transition-colors"
+                                        >
+                                            {verifyLoading ? 'Verifying...' : 'Verify Commitment Hash'}
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {verifyError && (
+                                <div className="p-4 bg-red-100 border-2 border-red-300 rounded-lg text-red-700 font-semibold mb-4">
+                                    {verifyError}
+                                </div>
+                            )}
+
+                            {verifyResult && (
+                                <div className={`p-4 rounded-lg ${verifyResult.isValid ? 'bg-green-100 border-2 border-green-300 text-green-700' : 'bg-red-100 border-2 border-red-300 text-red-700'}`}>
+                                    <p className="font-semibold mb-2">{verifyResult.message}</p>
+                                    <div className="grid md:grid-cols-2 gap-4 text-sm">
+                                        <div>
+                                            <p className="text-blue-700"><span className="font-semibold">Method:</span> {verifyResult.method}</p>
+                                            <p className="text-blue-700"><span className="font-semibold">Entries:</span> {verifyResult.entriesCount}</p>
+                                        </div>
+                                        <div>
+                                            <p className="text-blue-700"><span className="font-semibold">Provided Hash:</span></p>
+                                            <p className="font-mono text-xs break-all text-blue-600">{verifyResult.providedHash}</p>
+                                            <p className="text-blue-700 mt-2"><span className="font-semibold">Calculated Hash:</span></p>
+                                            <p className="font-mono text-xs break-all text-blue-600">{verifyResult.calculatedHash}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+
                         
 
                         {/* Discord Lookup Section */}
@@ -505,6 +634,8 @@ export default function AdminPage() {
                                                 <th className="text-left py-3 px-4 font-semibold text-blue-900">Month</th>
                                                 <th className="text-left py-3 px-4 font-semibold text-blue-900">Winner Address</th>
                                                 <th className="text-left py-3 px-4 font-semibold text-blue-900">Index</th>
+                                                <th className="text-left py-3 px-4 font-semibold text-blue-900">Commitment Hash</th>
+                                                <th className="text-left py-3 px-4 font-semibold text-blue-900">NFT IDs</th>
                                             </tr>
                                         </thead>
                                         <tbody>
@@ -514,6 +645,22 @@ export default function AdminPage() {
                                                     <td className="py-3 px-4 text-blue-700">{winner.month}</td>
                                                     <td className="py-3 px-4 text-blue-600 font-mono text-xs break-all">{winner.winnerAddress}</td>
                                                     <td className="py-3 px-4 text-blue-700">{winner.winnerIndex}</td>
+                                                    <td className="py-3 px-4 text-blue-600 font-mono text-xs break-all">
+                                                        {winner.commitmentHash ? winner.commitmentHash.replace(/^0x/i, '') : '—'}
+                                                    </td>
+                                                    <td className="py-3 px-4 text-blue-700">
+                                                        {winner.nftIds && winner.nftIds.length > 0 ? (
+                                                            <div className="flex flex-wrap gap-1 text-xs">
+                                                                {winner.nftIds.map((id) => (
+                                                                    <span key={id} className="px-2 py-1 bg-blue-50 border border-blue-200 rounded-md font-semibold text-blue-800">
+                                                                        {id}
+                                                                    </span>
+                                                                ))}
+                                                            </div>
+                                                        ) : (
+                                                            <span className="text-blue-500 text-xs">None</span>
+                                                        )}
+                                                    </td>
                                                 </tr>
                                             ))}
                                         </tbody>

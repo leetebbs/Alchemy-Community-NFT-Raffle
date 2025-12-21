@@ -67,6 +67,7 @@ export async function POST(request: NextRequest) {
         const options = { method: 'GET' };
         
         const response = await fetch(url, options);
+        console.log("response from nft owners fetch:", response);
         
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
